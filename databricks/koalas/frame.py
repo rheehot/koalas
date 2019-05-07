@@ -1159,10 +1159,6 @@ defaultdict(<class 'list'>, {'col..., 'col...})]
         """
         return self._reduce_for_stat_function(_Frame._count_expr)
 
-    def unique(self):
-        sdf = self._sdf
-        return DataFrame(spark.DataFrame(sdf._jdf.distinct(), sdf.sql_ctx), self._metadata.copy())
-
     def drop(self, labels, axis=1):
         """
         Drop specified labels from columns.
