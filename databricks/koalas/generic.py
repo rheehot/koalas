@@ -688,13 +688,15 @@ class _Frame(object):
         elif isinstance(header, list):
             sdf = kdf._sdf.select(
                 [
-                    self._internal.scol_for(label).alias(new_name)
+                    self._internal.spark_column_for(label).alias(new_name)
                     for (label, new_name) in zip(column_labels, header)
                 ]
             )
             header = True
         else:
-            sdf = kdf._sdf.select([kdf._internal.scol_for(label) for label in column_labels])
+            sdf = kdf._sdf.select(
+                [kdf._internal.spark_column_for(label) for label in column_labels]
+            )
 
         if num_files is not None:
             sdf = sdf.repartition(num_files)
@@ -1565,12 +1567,12 @@ class _Frame(object):
         ('cow', 'weight')
         """
         sdf = self._internal.sdf
-        column_scols = self._internal.column_scols
+        column_scols = self._internal.data_spark_columns
         cond = reduce(lambda x, y: x & y, map(lambda x: x.isNotNull(), column_scols))
 
         first_valid_row = sdf.drop(NATURAL_ORDER_COLUMN_NAME).filter(cond).first()
         first_valid_idx = tuple(
-            first_valid_row[idx_col] for idx_col in self._internal.index_columns
+            first_valid_row[idx_col] for idx_col in self._internal.index_spark_column_names
         )
 
         if len(first_valid_idx) == 1:
@@ -1659,7 +1661,8 @@ class _Frame(object):
             kser = _col(kdf_or_kser.to_frame())
             return kser._reduce_for_stat_function(
                 lambda _: F.expr(
-                    "approx_percentile(`%s`, 0.5, %s)" % (kser._internal.data_columns[0], accuracy)
+                    "approx_percentile(`%s`, 0.5, %s)"
+                    % (kser._internal.data_spark_column_names[0], accuracy)
                 ),
                 name="median",
             )
@@ -1668,9 +1671,9 @@ class _Frame(object):
         # This code path cannot reuse `_reduce_for_stat_function` since there looks no proper way
         # to get a column name from Spark column but we need it to pass it through `expr`.
         kdf = kdf_or_kser
-        sdf = kdf._sdf.select(kdf._internal.scols)
+        sdf = kdf._sdf.select(kdf._internal.spark_columns)
         median = lambda name: F.expr("approx_percentile(`%s`, 0.5, %s)" % (name, accuracy))
-        sdf = sdf.select([median(col).alias(col) for col in kdf._internal.data_columns])
+        sdf = sdf.select([median(col).alias(col) for col in kdf._internal.data_spark_column_names])
 
         # Attach a dummy column for index to avoid default index.
         sdf = _InternalFrame.attach_distributed_column(sdf, "__DUMMY__")
@@ -1681,7 +1684,9 @@ class _Frame(object):
                 kdf._internal.copy(
                     sdf=sdf,
                     index_map=[("__DUMMY__", None)],
-                    column_scols=[scol_for(sdf, col) for col in kdf._internal.data_columns],
+                    column_scols=[
+                        scol_for(sdf, col) for col in kdf._internal.data_spark_column_names
+                    ],
                 )
             )
             ._to_internal_pandas()

@@ -1504,7 +1504,7 @@ def get_dummies(
         )
 
     all_values = _reduce_spark_multi(
-        kdf._sdf, [F.collect_set(kdf._internal.scol_for(label)) for label in column_labels]
+        kdf._sdf, [F.collect_set(kdf._internal.spark_column_for(label)) for label in column_labels]
     )
     for i, label in enumerate(column_labels):
         values = sorted(all_values[i])
@@ -1711,7 +1711,7 @@ def concat(objs, axis=0, join="outer", ignore_index=False):
     if ignore_index:
         index_names_of_kdfs = [[] for _ in objs]
     else:
-        index_names_of_kdfs = [kdf._internal.index_names for kdf in objs]
+        index_names_of_kdfs = [kdf._internal.index_labels for kdf in objs]
     if all(name == index_names_of_kdfs[0] for name in index_names_of_kdfs) and all(
         idx == column_labelses_of_kdfs[0] for idx in column_labelses_of_kdfs
     ):
@@ -1747,7 +1747,7 @@ def concat(objs, axis=0, join="outer", ignore_index=False):
                 for label in columns_to_add:
                     sdf = sdf.withColumn(name_like_string(label), F.lit(None))
 
-                data_columns = kdf._internal.data_columns + [
+                data_columns = kdf._internal.data_spark_column_names + [
                     name_like_string(label) for label in columns_to_add
                 ]
                 kdf = DataFrame(
@@ -1763,10 +1763,11 @@ def concat(objs, axis=0, join="outer", ignore_index=False):
             raise ValueError("Only can inner (intersect) or outer (union) join the other axis.")
 
     if ignore_index:
-        sdfs = [kdf._sdf.select(kdf._internal.column_scols) for kdf in kdfs]
+        sdfs = [kdf._sdf.select(kdf._internal.data_spark_columns) for kdf in kdfs]
     else:
         sdfs = [
-            kdf._sdf.select(kdf._internal.index_scols + kdf._internal.column_scols) for kdf in kdfs
+            kdf._sdf.select(kdf._internal.index_spark_columns + kdf._internal.data_spark_columns)
+            for kdf in kdfs
         ]
     concatenated = reduce(lambda x, y: x.union(y), sdfs)
 
@@ -1775,7 +1776,9 @@ def concat(objs, axis=0, join="outer", ignore_index=False):
         kdfs[0]._internal.copy(
             sdf=concatenated,
             index_map=index_map,
-            column_scols=[scol_for(concatenated, col) for col in kdfs[0]._internal.data_columns],
+            column_scols=[
+                scol_for(concatenated, col) for col in kdfs[0]._internal.data_spark_column_names
+            ],
         )
     )
 

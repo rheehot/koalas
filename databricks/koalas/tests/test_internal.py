@@ -29,9 +29,9 @@ class InternalFrameTest(ReusedSQLTestCase, SQLTestUtils):
 
         self.assert_eq(internal.index_map, [(SPARK_DEFAULT_INDEX_NAME, None)])
         self.assert_eq(internal.column_labels, [("a",), ("b",)])
-        self.assert_eq(internal.data_columns, ["a", "b"])
-        self.assertTrue(internal.scol_for(("a",))._jc.equals(sdf["a"]._jc))
-        self.assertTrue(internal.scol_for(("b",))._jc.equals(sdf["b"]._jc))
+        self.assert_eq(internal.data_spark_column_names, ["a", "b"])
+        self.assertTrue(internal.spark_column_for(("a",))._jc.equals(sdf["a"]._jc))
+        self.assertTrue(internal.spark_column_for(("b",))._jc.equals(sdf["b"]._jc))
 
         self.assert_eq(internal.pandas_df, pdf)
 
@@ -43,8 +43,8 @@ class InternalFrameTest(ReusedSQLTestCase, SQLTestUtils):
 
         self.assert_eq(internal.index_map, [(SPARK_DEFAULT_INDEX_NAME, None), ("a", ("a",))])
         self.assert_eq(internal.column_labels, [("b",)])
-        self.assert_eq(internal.data_columns, ["b"])
-        self.assertTrue(internal.scol_for(("b",))._jc.equals(sdf["b"]._jc))
+        self.assert_eq(internal.data_spark_column_names, ["b"])
+        self.assertTrue(internal.spark_column_for(("b",))._jc.equals(sdf["b"]._jc))
 
         self.assert_eq(internal.pandas_df, pdf)
 
@@ -56,7 +56,7 @@ class InternalFrameTest(ReusedSQLTestCase, SQLTestUtils):
 
         self.assert_eq(internal.index_map, [(SPARK_DEFAULT_INDEX_NAME, None), ("a", ("a",))])
         self.assert_eq(internal.column_labels, [("x", "b")])
-        self.assert_eq(internal.data_columns, ["(x, b)"])
-        self.assertTrue(internal.scol_for(("x", "b"))._jc.equals(sdf["(x, b)"]._jc))
+        self.assert_eq(internal.data_spark_column_names, ["(x, b)"])
+        self.assertTrue(internal.spark_column_for(("x", "b"))._jc.equals(sdf["(x, b)"]._jc))
 
         self.assert_eq(internal.pandas_df, pdf)

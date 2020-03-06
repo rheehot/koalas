@@ -128,12 +128,12 @@ class AtIndexer(_IndexerLike):
 
         cond = reduce(
             lambda x, y: x & y,
-            [scol == row for scol, row in zip(self._internal.index_scols, row_sel)],
+            [scol == row for scol, row in zip(self._internal.index_spark_columns, row_sel)],
         )
         pdf = (
             self._internal.sdf.drop(NATURAL_ORDER_COLUMN_NAME)
             .filter(cond)
-            .select(self._internal.scol_for(col_sel))
+            .select(self._internal.spark_column_for(col_sel))
             .toPandas()
         )
 
@@ -224,7 +224,7 @@ class _LocIndexerLike(_IndexerLike):
                 return self._kdf_or_kser
 
             column_labels = self._internal.column_labels
-            column_scols = self._internal.column_scols
+            column_scols = self._internal.data_spark_columns
             returns_series = True
         else:
             assert self._is_df
@@ -250,10 +250,10 @@ class _LocIndexerLike(_IndexerLike):
                 return self._kdf_or_kser._kser_for(column_labels[0])
 
         if remaining_index is not None:
-            index_scols = self._internal.index_scols[-remaining_index:]
+            index_scols = self._internal.index_spark_columns[-remaining_index:]
             index_map = self._internal.index_map[-remaining_index:]
         else:
-            index_scols = self._internal.index_scols
+            index_scols = self._internal.index_spark_columns
             index_map = self._internal.index_map
 
         if len(column_labels) > 0:
@@ -305,7 +305,9 @@ class _LocIndexerLike(_IndexerLike):
         kdf = DataFrame(internal)
 
         if returns_series:
-            kdf_or_kser = Series(kdf._internal.copy(scol=kdf._internal.column_scols[0]), anchor=kdf)
+            kdf_or_kser = Series(
+                kdf._internal.copy(scol=kdf._internal.data_spark_columns[0]), anchor=kdf
+            )
         else:
             kdf_or_kser = kdf
 
@@ -519,13 +521,13 @@ class LocIndexer(_LocIndexerLike):
             assert isinstance(rows_sel.spark_type, BooleanType), rows_sel.spark_type
             return rows_sel._scol, None, None
         elif isinstance(rows_sel, slice):
-            assert len(self._internal.index_columns) > 0
+            assert len(self._internal.index_spark_column_names) > 0
             if rows_sel.step is not None:
                 LocIndexer._raiseNotImplemented("Cannot use step with Spark.")
             if rows_sel == slice(None):
                 # If slice is None - select everything, so nothing to do
                 return None, None, None
-            elif len(self._internal.index_columns) == 1:
+            elif len(self._internal.index_spark_column_names) == 1:
                 sdf = self._internal.sdf
                 index = self._kdf_or_kser.index
                 index_column = index.to_series()
@@ -597,7 +599,7 @@ class LocIndexer(_LocIndexerLike):
             rows_sel = list(rows_sel)
             if len(rows_sel) == 0:
                 return F.lit(False), None, None
-            elif len(self._internal.index_columns) == 1:
+            elif len(self._internal.index_spark_column_names) == 1:
                 index_column = self._kdf_or_kser.index.to_series()
                 index_data_type = index_column.spark_type
                 if len(rows_sel) == 1:
@@ -620,7 +622,9 @@ class LocIndexer(_LocIndexerLike):
             if len(rows_sel) > len(self._internal.index_map):
                 raise SparkPandasIndexingError("Too many indexers")
 
-            rows = [scol == value for scol, value in zip(self._internal.index_scols, rows_sel)]
+            rows = [
+                scol == value for scol, value in zip(self._internal.index_spark_columns, rows_sel)
+            ]
             return (
                 reduce(lambda x, y: x & y, rows),
                 None,
@@ -652,10 +656,10 @@ class LocIndexer(_LocIndexerLike):
                 assert len(labels) == 1
                 label = list(labels)[0]
                 column_labels = [label]
-                column_scols = [self._internal.scol_for(label)]
+                column_scols = [self._internal.spark_column_for(label)]
             else:
                 column_labels = [lbl for _, lbl in labels]
-                column_scols = [self._internal.scol_for(label) for label, _ in labels]
+                column_scols = [self._internal.spark_column_for(label) for label, _ in labels]
 
         return column_labels, column_scols, returns_series
 
@@ -677,7 +681,7 @@ class LocIndexer(_LocIndexerLike):
 
         if cols_sel is None:
             column_labels = self._internal.column_labels
-            column_scols = self._internal.column_scols
+            column_scols = self._internal.data_spark_columns
         elif isinstance(cols_sel, (str, tuple)):
             if isinstance(cols_sel, str):
                 cols_sel = (cols_sel,)
@@ -705,7 +709,7 @@ class LocIndexer(_LocIndexerLike):
                 for label in self._internal.column_labels:
                     if label == key or label[0] == key:
                         column_labels.append(label)
-                        column_scols.append(self._internal.scol_for(label))
+                        column_scols.append(self._internal.spark_column_for(label))
                         found = True
                 if not found:
                     raise KeyError("['{}'] not in index".format(name_like_string(key)))
@@ -746,7 +750,7 @@ class LocIndexer(_LocIndexerLike):
                     kdf[col_sel] = Series(
                         kdf[col_sel]._internal.copy(
                             scol=F.when(
-                                kdf._internal.index_scols[0].isin(rows_sel), new_col
+                                kdf._internal.index_spark_columns[0].isin(rows_sel), new_col
                             ).otherwise(kdf[col_sel]._scol)
                         ),
                         anchor=kdf,
@@ -954,7 +958,7 @@ class iLocIndexer(_LocIndexerLike):
         # make cols_sel a 1-tuple of string if a single string
         if isinstance(cols_sel, Series) and cols_sel._equals(self._kdf_or_kser):
             column_labels = cols_sel._internal.column_labels
-            column_scols = cols_sel._internal.column_scols
+            column_scols = cols_sel._internal.data_spark_columns
         elif isinstance(cols_sel, int):
             if cols_sel > len(self._internal.column_labels):
                 raise KeyError(cols_sel)

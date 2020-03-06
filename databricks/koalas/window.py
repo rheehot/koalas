@@ -688,7 +688,9 @@ class RollingGroupby(Rolling):
                 (SPARK_INDEX_NAME_FORMAT(len(new_index_map)), groupkey._internal.column_labels[0])
             )
 
-        for new_index_scol, index_name in zip(kdf._internal.index_scols, kdf._internal.index_names):
+        for new_index_scol, index_name in zip(
+            kdf._internal.index_spark_columns, kdf._internal.index_labels
+        ):
             new_index_scols.append(
                 new_index_scol.alias(SPARK_INDEX_NAME_FORMAT(len(new_index_scols)))
             )
@@ -710,7 +712,7 @@ class RollingGroupby(Rolling):
             sdf=sdf,
             index_map=new_index_map,
             column_labels=[c._internal.column_labels[0] for c in applied],
-            column_scols=[scol_for(sdf, c._internal.data_columns[0]) for c in applied],
+            column_scols=[scol_for(sdf, c._internal.data_spark_column_names[0]) for c in applied],
         )
 
         ret = DataFrame(internal)

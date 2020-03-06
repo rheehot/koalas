@@ -81,8 +81,8 @@ def combine_frames(this, *args, how="full"):
             if this_name == that_name:
                 # We should merge the Spark columns into one
                 # to mimic pandas' behavior.
-                this_scol = this._internal.scol_for(this_column)
-                that_scol = that._internal.scol_for(that_column)
+                this_scol = this._internal.spark_column_for(this_column)
+                that_scol = that._internal.spark_column_for(that_column)
                 join_scol = this_scol == that_scol
                 join_scols.append(join_scol)
                 merged_index_scols.append(
@@ -98,16 +98,16 @@ def combine_frames(this, *args, how="full"):
         joined_df = joined_df.select(
             merged_index_scols
             + [
-                this[label]._scol.alias("__this_%s" % this._internal.column_name_for(label))
+                this[label]._scol.alias("__this_%s" % this._internal.spark_column_name_for(label))
                 for label in this._internal.column_labels
             ]
             + [
-                that[label]._scol.alias("__that_%s" % that._internal.column_name_for(label))
+                that[label]._scol.alias("__that_%s" % that._internal.spark_column_name_for(label))
                 for label in that._internal.column_labels
             ]
         )
 
-        index_columns = set(this._internal.index_columns)
+        index_columns = set(this._internal.index_spark_column_names)
         new_data_columns = [c for c in joined_df.columns if c not in index_columns]
         level = max(this._internal.column_labels_level, that._internal.column_labels_level)
         column_labels = [
@@ -233,7 +233,7 @@ def align_diff_frames(resolve_func, this, that, fillna=True, how="full"):
                 columns_to_keep.append(F.lit(None).cast(FloatType()).alias(str(combined_label)))
                 column_labels_to_keep.append(combined_label)
             else:
-                columns_to_keep.append(combined._internal.scol_for(combined_label))
+                columns_to_keep.append(combined._internal.spark_column_for(combined_label))
                 column_labels_to_keep.append(combined_label)
 
     that_columns_to_apply += additional_that_columns
@@ -280,7 +280,8 @@ def align_diff_series(func, this_series, *args, how="full"):
     combined = combine_frames(this_series.to_frame(), *cols, how=how)
 
     scol = func(
-        combined["this"]._internal.column_scols[0], *combined["that"]._internal.column_scols
+        combined["this"]._internal.data_spark_columns[0],
+        *combined["that"]._internal.data_spark_columns
     )
 
     return Series(
