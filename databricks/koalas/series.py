@@ -2902,7 +2902,7 @@ class Series(Frame, IndexOpsMixin, Generic[T]):
 
             >>> # This case does not return the length of whole frame but of the batch internally
             ... # used.
-            ... def length(pser) -> ks.Series[int]:
+            ... def length(pser) -> pd.Series[int]:
             ...     return pd.Series([len(pser)] * len(pser))
             ...
             >>> df = ks.DataFrame({'A': range(1000)})
@@ -2919,7 +2919,7 @@ class Series(Frame, IndexOpsMixin, Generic[T]):
 
             To avoid this, specify return type in ``func``, for instance, as below:
 
-            >>> def plus_one(x) -> ks.Series[int]:
+            >>> def plus_one(x) -> pd.Series[int]:
             ...     return x + 1
 
         Parameters
@@ -2948,7 +2948,7 @@ class Series(Frame, IndexOpsMixin, Generic[T]):
         1  3  4
         2  5  6
 
-        >>> def plus_one_func(pser) -> ks.Series[np.int64]:
+        >>> def plus_one_func(pser) -> pd.Series[np.int64]:
         ...     return pser + 1
         >>> df.A.transform_batch(plus_one_func)
         0    2
@@ -2966,7 +2966,7 @@ class Series(Frame, IndexOpsMixin, Generic[T]):
 
         You can also specify extra arguments.
 
-        >>> def plus_one_func(pser, a, b, c=3) -> ks.Series[np.int64]:
+        >>> def plus_one_func(pser, a, b, c=3) -> pd.Series[np.int64]:
         ...     return pser + a + b + c
         >>> df.A.transform_batch(plus_one_func, 1, b=2)
         0     7

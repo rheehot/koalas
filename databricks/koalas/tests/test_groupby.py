@@ -1435,7 +1435,7 @@ class GroupByTest(ReusedSQLTestCase, TestUtils):
             self.test_apply()
 
     def test_apply_negative(self):
-        def func(_) -> ks.Series[int]:
+        def func(_) -> pd.Series[int]:
             return pd.Series([1])
 
         with self.assertRaisesRegex(TypeError, "Series as a return type hint at frame groupby"):
@@ -1511,7 +1511,7 @@ class GroupByTest(ReusedSQLTestCase, TestUtils):
 
         acc = ks.utils.default_session().sparkContext.accumulator(0)
 
-        def sum_with_acc_frame(x) -> ks.DataFrame[np.float64, np.float64]:
+        def sum_with_acc_frame(x) -> pd.DataFrame[np.float64, np.float64]:
             nonlocal acc
             acc += 1
             return np.sum(x)

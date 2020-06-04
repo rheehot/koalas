@@ -2860,14 +2860,14 @@ class DataFrameTest(ReusedSQLTestCase, SQLTestUtils):
 
         with self.assertRaisesRegex(TypeError, "The given function.*1 or 'column'; however"):
 
-            def f1(_) -> ks.DataFrame[int]:
+            def f1(_) -> pd.DataFrame[int]:
                 pass
 
             kdf.apply(f1, axis=0)
 
         with self.assertRaisesRegex(TypeError, "The given function.*0 or 'index'; however"):
 
-            def f2(_) -> ks.Series[int]:
+            def f2(_) -> pd.Series[int]:
                 pass
 
             kdf.apply(f2, axis=1)
@@ -2925,7 +2925,7 @@ class DataFrameTest(ReusedSQLTestCase, SQLTestUtils):
 
         with self.assertRaisesRegex(TypeError, "The given function.*frame as its type hints"):
 
-            def f2(_) -> ks.Series[int]:
+            def f2(_) -> pd.Series[int]:
                 pass
 
             kdf.apply_batch(f2)
@@ -3020,7 +3020,7 @@ class DataFrameTest(ReusedSQLTestCase, SQLTestUtils):
 
         kdf = ks.range(10)
 
-        def plus_one(pdf) -> ks.Series[np.int64]:
+        def plus_one(pdf) -> pd.Series[np.int64]:
             return pdf.id + 1
 
         kdf["d"] = kdf.transform_batch(plus_one)
@@ -3030,7 +3030,7 @@ class DataFrameTest(ReusedSQLTestCase, SQLTestUtils):
 
         kdf = ks.range(10)
 
-        def plus_one(ser) -> ks.Series[np.int64]:
+        def plus_one(ser) -> pd.Series[np.int64]:
             return ser + 1
 
         kdf["d"] = kdf.id.transform_batch(plus_one)

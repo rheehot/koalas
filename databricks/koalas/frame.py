@@ -291,23 +291,6 @@ rectangle    16.0  2.348543e+108
 T = TypeVar("T")
 
 
-if (3, 5) <= sys.version_info < (3, 7):
-    from typing import GenericMeta  # type: ignore
-
-    # This is a workaround to support variadic generic in DataFrame in Python 3.5+.
-    # See https://github.com/python/typing/issues/193
-    # We wrap the input params by a tuple to mimic variadic generic.
-    old_getitem = GenericMeta.__getitem__  # type: ignore
-
-    def new_getitem(self, params):
-        if hasattr(self, "is_dataframe"):
-            return old_getitem(self, Tuple[params])
-        else:
-            return old_getitem(self, params)
-
-    GenericMeta.__getitem__ = new_getitem  # type: ignore
-
-
 class DataFrame(Frame, Generic[T]):
     """
     Koalas DataFrame that corresponds to pandas DataFrame logically. This holds Spark DataFrame
@@ -2006,7 +1989,7 @@ defaultdict(<class 'list'>, {'col..., 'col...})]
 
             >>> # This case does not return the length of whole frame but of the batch internally
             ... # used.
-            ... def length(pdf) -> ks.DataFrame[int]:
+            ... def length(pdf) -> pd.DataFrame[int]:
             ...     return pd.DataFrame([len(pdf)])
             ...
             >>> df = ks.DataFrame({'A': range(1000)})
@@ -2025,7 +2008,7 @@ defaultdict(<class 'list'>, {'col..., 'col...})]
 
             To avoid this, specify return type in ``func``, for instance, as below:
 
-            >>> def plus_one(x) -> ks.DataFrame[float, float]:
+            >>> def plus_one(x) -> pd.DataFrame[float, float]:
             ...     return x + 1
 
             If the return type is specified, the output column names become
@@ -2065,7 +2048,7 @@ defaultdict(<class 'list'>, {'col..., 'col...})]
         1  3  4
         2  5  6
 
-        >>> def query_func(pdf) -> ks.DataFrame[int, int]:
+        >>> def query_func(pdf) -> pd.DataFrame[int, int]:
         ...     return pdf.query('A == 1')
         >>> df.apply_batch(query_func)
            c0  c1
@@ -2079,7 +2062,7 @@ defaultdict(<class 'list'>, {'col..., 'col...})]
 
         You can also specify extra arguments.
 
-        >>> def calculation(pdf, y, z) -> ks.DataFrame[int, int]:
+        >>> def calculation(pdf, y, z) -> pd.DataFrame[int, int]:
         ...     return pdf ** y + z
         >>> df.apply_batch(calculation, args=(10,), z=20)
                 c0        c1
@@ -2220,7 +2203,7 @@ defaultdict(<class 'list'>, {'col..., 'col...})]
             To avoid this, specify the return type as `Series` or scalar value in ``func``,
             for instance, as below:
 
-            >>> def square(s) -> ks.Series[np.int32]:
+            >>> def square(s) -> pd.Series[np.int32]:
             ...     return s ** 2
 
             Koalas uses return type hint and does not try to infer the type.
@@ -2228,7 +2211,7 @@ defaultdict(<class 'list'>, {'col..., 'col...})]
             In case when axis is 1, it requires to specify `DataFrame` or scalar value
             with type hints as below:
 
-            >>> def plus_one(x) -> ks.DataFrame[float, float]:
+            >>> def plus_one(x) -> pd.DataFrame[float, float]:
             ...     return x + 1
 
             If the return type is specified as `DataFrame`, the output column names become
@@ -2280,7 +2263,7 @@ defaultdict(<class 'list'>, {'col..., 'col...})]
         Using a numpy universal function (in this case the same as
         ``np.sqrt(df)``):
 
-        >>> def sqrt(x) -> ks.Series[float]:
+        >>> def sqrt(x) -> pd.Series[float]:
         ...     return np.sqrt(x)
         ...
         >>> df.apply(sqrt, axis=0)
@@ -2327,7 +2310,7 @@ defaultdict(<class 'list'>, {'col..., 'col...})]
         In order to specify the types when `axis` is '1', it should use DataFrame[...]
         annotation. In this case, the column names are automatically generated.
 
-        >>> def identify(x) -> ks.DataFrame[np.int64, np.int64]:
+        >>> def identify(x) -> pd.DataFrame[np.int64, np.int64]:
         ...     return x
         ...
         >>> df.apply(identify, axis=1)
@@ -2338,7 +2321,7 @@ defaultdict(<class 'list'>, {'col..., 'col...})]
 
         You can also specify extra arguments.
 
-        >>> def plus_two(a, b, c) -> ks.DataFrame[np.int64, np.int64]:
+        >>> def plus_two(a, b, c) -> pd.DataFrame[np.int64, np.int64]:
         ...     return a + b + c
         ...
         >>> df.apply(plus_two, axis=1, args=(1,), c=3)
@@ -2473,7 +2456,7 @@ defaultdict(<class 'list'>, {'col..., 'col...})]
 
              To avoid this, specify return type in ``func``, for instance, as below:
 
-             >>> def square(x) -> ks.Series[np.int32]:
+             >>> def square(x) -> pd.Series[np.int32]:
              ...     return x ** 2
 
              Koalas uses return type hint and does not try to infer the type.
@@ -2484,7 +2467,7 @@ defaultdict(<class 'list'>, {'col..., 'col...})]
             does work as a global aggregation but an aggregation of each segment. See
             below:
 
-            >>> def func(x) -> ks.Series[np.int32]:
+            >>> def func(x) -> pd.Series[np.int32]:
             ...     return x + sum(x)
 
         Parameters
@@ -2523,7 +2506,7 @@ defaultdict(<class 'list'>, {'col..., 'col...})]
         1  1  2
         2  2  3
 
-        >>> def square(x) -> ks.Series[np.int32]:
+        >>> def square(x) -> pd.Series[np.int32]:
         ...     return x ** 2
         >>> df.transform(square)
            A  B
@@ -2558,7 +2541,7 @@ defaultdict(<class 'list'>, {'col..., 'col...})]
 
         You can also specify extra arguments.
 
-        >>> def calculation(x, y, z) -> ks.Series[int]:
+        >>> def calculation(x, y, z) -> pd.Series[int]:
         ...     return x ** y + z
         >>> df.transform(calculation, y=10, z=20)  # doctest: +NORMALIZE_WHITESPACE
               X
@@ -2621,7 +2604,7 @@ defaultdict(<class 'list'>, {'col..., 'col...})]
 
             >>> # This case does not return the length of whole frame but of the batch internally
             ... # used.
-            ... def length(pdf) -> ks.DataFrame[int]:
+            ... def length(pdf) -> pd.DataFrame[int]:
             ...     return pd.DataFrame([len(pdf)] * len(pdf))
             ...
             >>> df = ks.DataFrame({'A': range(1000)})
@@ -2638,7 +2621,7 @@ defaultdict(<class 'list'>, {'col..., 'col...})]
 
             To avoid this, specify return type in ``func``, for instance, as below:
 
-            >>> def plus_one(x) -> ks.DataFrame[float, float]:
+            >>> def plus_one(x) -> pd.DataFrame[float, float]:
             ...     return x + 1
 
             If the return type is specified, the output column names become
@@ -2673,7 +2656,7 @@ defaultdict(<class 'list'>, {'col..., 'col...})]
         1  3  4
         2  5  6
 
-        >>> def plus_one_func(pdf) -> ks.DataFrame[int, int]:
+        >>> def plus_one_func(pdf) -> pd.DataFrame[int, int]:
         ...     return pdf + 1
         >>> df.transform_batch(plus_one_func)
            c0  c1
@@ -2681,7 +2664,7 @@ defaultdict(<class 'list'>, {'col..., 'col...})]
         1   4   5
         2   6   7
 
-        >>> def plus_one_func(pdf) -> ks.Series[int]:
+        >>> def plus_one_func(pdf) -> pd.Series[int]:
         ...     return pdf.B + 1
         >>> df.transform_batch(plus_one_func)
         0    3

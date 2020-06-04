@@ -102,7 +102,7 @@ __all__ = [
 ]
 
 
-def _auto_patch():
+def _auto_patch_spark():
     import os
     import logging
 
@@ -137,7 +137,58 @@ def _auto_patch():
         df.DataFrame.to_koalas = DataFrame.to_koalas
 
 
-_auto_patch()
+def _auto_patch_pandas():
+    import pandas as pd
+    import sys
+    from typing import Generic, TypeVar, Tuple
+
+    if (3, 5) <= sys.version_info < (3, 7):
+        from typing import GenericMeta  # type: ignore
+
+        # This is a workaround to support variadic generic in DataFrame in Python 3.5+.
+        # See https://github.com/python/typing/issues/193
+        # We wrap the input params by a tuple to mimic variadic generic.
+        old_getitem = GenericMeta.__getitem__  # type: ignore
+
+        def new_getitem(self, params):
+            if hasattr(self, "is_dataframe"):  # See Koalas's DataFrame
+                return old_getitem(self, Tuple[params])
+            else:
+                return old_getitem(self, params)
+
+        GenericMeta.__getitem__ = new_getitem  # type: ignore
+
+    T = TypeVar("T")
+
+    class PandasDataFrame(pd.DataFrame, Generic[T]):
+        if sys.version_info >= (3, 7):
+
+            def __class_getitem__(cls, params):
+                # This is a workaround to support variadic generic in DataFrame in Python 3.7.
+                # See https://github.com/python/typing/issues/193
+                # we always wraps the given type hints by a tuple to mimic the variadic generic.
+                return super(cls, PandasDataFrame).__class_getitem__(Tuple[params])
+
+        elif (3, 5) <= sys.version_info < (3, 7):
+            # This is a workaround to support variadic generic in DataFrame in Python 3.5+
+            # The implementation is in its metaclass so this flag is needed to distinguish
+            # Koalas DataFrame.
+            is_dataframe = None
+
+    PandasDataFrame.__name__ = pd.DataFrame.__name__
+
+    pd.DataFrame = PandasDataFrame
+
+    class PandasSeries(Generic[T]):
+        pass
+
+    PandasSeries.__name__ = pd.Series.__name__
+
+    pd.Series = PandasSeries
+
+
+_auto_patch_spark()
+_auto_patch_pandas()
 
 # Import after the usage logger is attached.
 from databricks.koalas.config import *

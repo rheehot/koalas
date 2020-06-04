@@ -852,7 +852,7 @@ class GroupBy(object):
 
              To avoid this, specify return type in ``func``, for instance, as below:
 
-             >>> def pandas_div(x) -> ks.DataFrame[float, float]:
+             >>> def pandas_div(x) -> pd.DataFrame[float, float]:
              ...     return x[['B', 'C']] / x[['B', 'C']]
 
              If the return type is specified, the output column names become
@@ -906,7 +906,7 @@ class GroupBy(object):
 
         You can specify the type hint and prevent schema inference for better performance.
 
-        >>> def pandas_div(x) -> ks.DataFrame[float, float]:
+        >>> def pandas_div(x) -> pd.DataFrame[float, float]:
         ...     return x[['B', 'C']] / x[['B', 'C']]
         >>> g.apply(pandas_div).sort_index()  # doctest: +NORMALIZE_WHITESPACE
             c0   c1
@@ -923,7 +923,7 @@ class GroupBy(object):
 
         In case of Series, it works as below.
 
-        >>> def plus_max(x) -> ks.Series[np.int]:
+        >>> def plus_max(x) -> pd.Series[np.int]:
         ...     return x + x.max()
         >>> df.B.groupby(df.A).apply(plus_max).sort_index()
         0    6
@@ -1808,7 +1808,7 @@ class GroupBy(object):
 
              To avoid this, specify return type in ``func``, for instance, as below:
 
-             >>> def convert_to_string(x) -> ks.Series[str]:
+             >>> def convert_to_string(x) -> pd.Series[str]:
              ...     return x.apply("a string {}".format)
 
         .. note:: the series within ``func`` is actually a pandas series. Therefore,
@@ -1849,7 +1849,7 @@ class GroupBy(object):
         its argument and returns a Series. `transform` applies the function on each series
         in each grouped data, and combine them into a new DataFrame:
 
-        >>> def convert_to_string(x) -> ks.Series[str]:
+        >>> def convert_to_string(x) -> pd.Series[str]:
         ...     return x.apply("a string {}".format)
         >>> g.transform(convert_to_string)  # doctest: +NORMALIZE_WHITESPACE
                     B           C
@@ -1857,7 +1857,7 @@ class GroupBy(object):
         1  a string 2  a string 6
         2  a string 3  a string 5
 
-        >>> def plus_max(x) -> ks.Series[np.int]:
+        >>> def plus_max(x) -> pd.Series[np.int]:
         ...     return x + x.max()
         >>> g.transform(plus_max)  # doctest: +NORMALIZE_WHITESPACE
            B   C
@@ -1891,7 +1891,7 @@ class GroupBy(object):
 
         You can also specify extra arguments to pass to the function.
 
-        >>> def calculation(x, y, z) -> ks.Series[np.int]:
+        >>> def calculation(x, y, z) -> pd.Series[np.int]:
         ...     return x + x.min() + y + z
         >>> g.transform(calculation, 5, z=20)  # doctest: +NORMALIZE_WHITESPACE
             B   C

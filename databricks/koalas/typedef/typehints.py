@@ -182,16 +182,47 @@ def infer_return_type(f) -> typing.Union[SeriesType, DataFrameType, ScalarType, 
     ...    pass
     >>> infer_return_type(func).tpe
     StructType(List(StructField(c0,FloatType,true)))
+
+    >>> def func() -> pd.Series[int]:
+    ...    pass
+    >>> infer_return_type(func).tpe
+    IntegerType
+
+    >>> def func() -> pd.DataFrame[np.float, str]:
+    ...    pass
+    >>> infer_return_type(func).tpe
+    StructType(List(StructField(c0,FloatType,true),StructField(c1,StringType,true)))
+
+    >>> def func() -> pd.DataFrame[np.float]:
+    ...    pass
+    >>> infer_return_type(func).tpe
+    StructType(List(StructField(c0,FloatType,true)))
+
+    >>> def func() -> 'pd.Series[int]':
+    ...    pass
+    >>> infer_return_type(func).tpe
+    IntegerType
+
+    >>> def func() -> 'pd.DataFrame[np.float, str]':
+    ...    pass
+    >>> infer_return_type(func).tpe
+    StructType(List(StructField(c0,FloatType,true),StructField(c1,StringType,true)))
+
+    >>> def func() -> 'pd.DataFrame[np.float]':
+    ...    pass
+    >>> infer_return_type(func).tpe
+    StructType(List(StructField(c0,FloatType,true)))
     """
+
     spec = getfullargspec(f)
     tpe = spec.annotations.get("return", None)
     if isinstance(tpe, str):
         # This type hint can happen when given hints are string to avoid forward reference.
         tpe = resolve_string_type_hint(tpe)
-    if hasattr(tpe, "__origin__") and tpe.__origin__ == ks.Series:
+    if hasattr(tpe, "__origin__") and issubclass(tpe.__origin__, (ks.Series, pd.Series)):
         inner = as_spark_type(tpe.__args__[0])
         return SeriesType(inner)
-    if hasattr(tpe, "__origin__") and tpe.__origin__ == ks.DataFrame:
+    if hasattr(tpe, "__origin__") and issubclass(tpe.__origin__, (ks.DataFrame, pd.DataFrame)):
         tuple_type = tpe.__args__[0]
         if hasattr(tuple_type, "__tuple_params__"):
             # Python 3.5.0 to 3.5.2 has '__tuple_params__' instead.

@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 import numpy as np
+import pandas
 import pandas as pd
 from numpy import *
 from pandas import *
@@ -21,6 +22,7 @@ from inspect import getfullargspec
 
 
 def resolve_string_type_hint(tpe):
+    from databricks import koalas
     import databricks.koalas as ks
     from databricks.koalas import DataFrame, Series
 
